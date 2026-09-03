@@ -37,6 +37,12 @@ import (
 
 	remedyv1alpha1 "github.com/mjthecoder65/k8s-remedy-operator/api/v1alpha1"
 	"github.com/mjthecoder65/k8s-remedy-operator/internal/controller"
+
+	// Blank imports register each detector/action's implementation with its
+	// package-level registry via init(). Adding a new detector or action
+	// only requires adding its blank import here - no other code changes.
+	_ "github.com/mjthecoder65/k8s-remedy-operator/internal/actions/restart"
+	_ "github.com/mjthecoder65/k8s-remedy-operator/internal/detectors/crashloop"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -186,8 +192,9 @@ func main() {
 		os.Exit(1)
 	}
 	if err := (&controller.PlaybookReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
+		Client:   mgr.GetClient(),
+		Scheme:   mgr.GetScheme(),
+		Recorder: mgr.GetEventRecorderFor("playbook-controller"),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Playbook")
 		os.Exit(1)
