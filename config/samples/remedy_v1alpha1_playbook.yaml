@@ -4,6 +4,19 @@ metadata:
   labels:
     app.kubernetes.io/name: k8s-remedy-operator
     app.kubernetes.io/managed-by: kustomize
-  name: playbook-sample
+  name: crashloop-restart
 spec:
-  # TODO(user): Add fields here
+  trigger:
+    detector: crashloop
+    threshold:
+      restartCount: 5
+      window: 10m
+  action:
+    type: restart
+    maxAffectedPercent: 20
+  verification:
+    healthCheck: readinessProbe
+    timeout: 2m
+  safety:
+    dryRun: false
+    requireApproval: false

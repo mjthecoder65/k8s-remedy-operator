@@ -39,10 +39,95 @@ spec:
           spec:
             description: spec defines the desired state of RemediationPolicy
             properties:
-              foo:
-                description: foo is an example field of RemediationPolicy. Edit remediationpolicy_types.go
-                  to remove/update
-                type: string
+              detectors:
+                description: detectors lists which detectors are enabled within this
+                  policy's scope.
+                items:
+                  description: DetectorConfig enables or disables a single detector
+                    for this policy.
+                  properties:
+                    enabled:
+                      default: true
+                      description: enabled turns this detector on or off within the
+                        policy's scope.
+                      type: boolean
+                    name:
+                      description: name is the detector being configured.
+                      enum:
+                      - crashloop
+                      - memorypressure
+                      - certexpiry
+                      - dependencytimeout
+                      type: string
+                  required:
+                  - name
+                  type: object
+                type: array
+              safety:
+                description: |-
+                  safety defines global safety limits enforced across every playbook
+                  bound to this policy.
+                properties:
+                  blastRadiusPercent:
+                    description: |-
+                      blastRadiusPercent is the default per-action blast-radius cap applied
+                      when a bound playbook does not set its own maxAffectedPercent.
+                    format: int32
+                    maximum: 100
+                    minimum: 1
+                    type: integer
+                  circuitBreaker:
+                    description: |-
+                      circuitBreaker defines the default circuit-breaker behavior for
+                      playbooks bound to this policy.
+                    properties:
+                      failureThreshold:
+                        default: 3
+                        description: |-
+                          failureThreshold is the number of consecutive failed remediations or
+                          verification failures that trips the breaker.
+                        format: int32
+                        minimum: 1
+                        type: integer
+                    type: object
+                  dryRun:
+                    default: true
+                    description: |-
+                      dryRun, when true, forces every playbook under this policy into dry-run
+                      mode regardless of the playbook's own setting.
+                    type: boolean
+                  globalRateLimit:
+                    description: |-
+                      globalRateLimit caps total remediation actions across all playbooks
+                      bound to this policy.
+                    properties:
+                      maxActions:
+                        description: maxActions is the maximum number of remediation
+                          actions permitted within Window.
+                        format: int32
+                        minimum: 1
+                        type: integer
+                      window:
+                        description: window is the rolling time window MaxActions
+                          is evaluated over.
+                        type: string
+                    required:
+                    - maxActions
+                    - window
+                    type: object
+                type: object
+              scope:
+                description: scope restricts which namespaces this policy applies
+                  to. Omit for cluster-wide.
+                properties:
+                  namespaces:
+                    description: |-
+                      namespaces restricts this policy to the listed namespaces. Omit or leave
+                      empty for cluster-wide.
+                    items:
+                      type: string
+                    type: array
+                type: object
             type: object
           status:
             description: status defines the observed state of RemediationPolicy

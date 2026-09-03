@@ -39,10 +39,100 @@ spec:
           spec:
             description: spec defines the desired state of Playbook
             properties:
-              foo:
-                description: foo is an example field of Playbook. Edit playbook_types.go
-                  to remove/update
-                type: string
+              action:
+                description: action defines the remediation action executed when the
+                  trigger fires.
+                properties:
+                  maxAffectedPercent:
+                    description: |-
+                      maxAffectedPercent caps the percentage of a workload's replicas this
+                      action may touch in a single remediation window (blast-radius cap).
+                    format: int32
+                    maximum: 100
+                    minimum: 1
+                    type: integer
+                  type:
+                    description: type is the built-in or plugin action to execute.
+                    enum:
+                    - restart
+                    - rollback
+                    - scale
+                    - certrenew
+                    - cordon
+                    type: string
+                required:
+                - type
+                type: object
+              safety:
+                description: safety defines per-playbook safety overrides.
+                properties:
+                  dryRun:
+                    default: false
+                    description: |-
+                      dryRun logs and emits an event for the action this playbook would take,
+                      without executing it.
+                    type: boolean
+                  requireApproval:
+                    default: false
+                    description: |-
+                      requireApproval gates execution of this playbook's action behind manual
+                      approval (annotation, Slack, or webhook).
+                    type: boolean
+                type: object
+              trigger:
+                description: trigger defines which detector activates this playbook
+                  and under what threshold.
+                properties:
+                  detector:
+                    description: detector is the name of the registered Detector this
+                      playbook responds to.
+                    enum:
+                    - crashloop
+                    - memorypressure
+                    - certexpiry
+                    - dependencytimeout
+                    type: string
+                  threshold:
+                    description: threshold is the detector-specific condition that
+                      must be met to fire.
+                    properties:
+                      restartCount:
+                        description: |-
+                          restartCount is the number of container restarts within Window that
+                          trips the crashloop detector.
+                        format: int32
+                        minimum: 1
+                        type: integer
+                      window:
+                        description: |-
+                          window is the rolling time window over which RestartCount (or an
+                          equivalent detector-specific counter) is evaluated.
+                        type: string
+                    type: object
+                required:
+                - detector
+                type: object
+              verification:
+                description: |-
+                  verification defines the post-action health check that confirms the
+                  remediation succeeded.
+                properties:
+                  healthCheck:
+                    default: readinessProbe
+                    description: healthCheck selects how post-action health is determined.
+                    enum:
+                    - readinessProbe
+                    - custom
+                    type: string
+                  timeout:
+                    description: |-
+                      timeout is how long to wait for the health check to pass before the
+                      remediation is considered failed and eligible for rollback.
+                    type: string
+                type: object
+            required:
+            - action
+            - trigger
             type: object
           status:
             description: status defines the observed state of Playbook

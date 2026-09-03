@@ -4,6 +4,22 @@ metadata:
   labels:
     app.kubernetes.io/name: k8s-remedy-operator
     app.kubernetes.io/managed-by: kustomize
-  name: remediationpolicy-sample
+  name: default
 spec:
-  # TODO(user): Add fields here
+  detectors:
+    - name: crashloop
+      enabled: true
+    - name: memorypressure
+      enabled: false
+    - name: certexpiry
+      enabled: false
+    - name: dependencytimeout
+      enabled: false
+  safety:
+    dryRun: true
+    globalRateLimit:
+      maxActions: 10
+      window: 5m
+    blastRadiusPercent: 20
+    circuitBreaker:
+      failureThreshold: 3

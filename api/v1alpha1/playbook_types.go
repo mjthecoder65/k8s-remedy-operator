@@ -23,16 +23,127 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
+// DetectorType identifies which detector a playbook trigger listens to.
+// +kubebuilder:validation:Enum=crashloop;memorypressure;certexpiry;dependencytimeout
+type DetectorType string
+
+const (
+	DetectorCrashLoop         DetectorType = "crashloop"
+	DetectorMemoryPressure    DetectorType = "memorypressure"
+	DetectorCertExpiry        DetectorType = "certexpiry"
+	DetectorDependencyTimeout DetectorType = "dependencytimeout"
+)
+
+// ActionType identifies which built-in remediation action a playbook executes.
+// +kubebuilder:validation:Enum=restart;rollback;scale;certrenew;cordon
+type ActionType string
+
+const (
+	ActionRestart   ActionType = "restart"
+	ActionRollback  ActionType = "rollback"
+	ActionScale     ActionType = "scale"
+	ActionCertRenew ActionType = "certrenew"
+	ActionCordon    ActionType = "cordon"
+)
+
+// HealthCheckType identifies how post-action verification is performed.
+// +kubebuilder:validation:Enum=readinessProbe;custom
+type HealthCheckType string
+
+const (
+	HealthCheckReadinessProbe HealthCheckType = "readinessProbe"
+	HealthCheckCustom         HealthCheckType = "custom"
+)
+
+// PlaybookThreshold defines the detector-specific condition that must be met
+// for a trigger to fire.
+type PlaybookThreshold struct {
+	// restartCount is the number of container restarts within Window that
+	// trips the crashloop detector.
+	// +optional
+	// +kubebuilder:validation:Minimum=1
+	RestartCount *int32 `json:"restartCount,omitempty"`
+
+	// window is the rolling time window over which RestartCount (or an
+	// equivalent detector-specific counter) is evaluated.
+	// +optional
+	Window *metav1.Duration `json:"window,omitempty"`
+}
+
+// PlaybookTrigger defines which detector activates this playbook and under
+// what threshold.
+type PlaybookTrigger struct {
+	// detector is the name of the registered Detector this playbook responds to.
+	// +required
+	Detector DetectorType `json:"detector"`
+
+	// threshold is the detector-specific condition that must be met to fire.
+	// +optional
+	Threshold *PlaybookThreshold `json:"threshold,omitempty"`
+}
+
+// PlaybookAction defines the remediation action executed when the trigger fires.
+type PlaybookAction struct {
+	// type is the built-in or plugin action to execute.
+	// +required
+	Type ActionType `json:"type"`
+
+	// maxAffectedPercent caps the percentage of a workload's replicas this
+	// action may touch in a single remediation window (blast-radius cap).
+	// +optional
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=100
+	MaxAffectedPercent *int32 `json:"maxAffectedPercent,omitempty"`
+}
+
+// PlaybookVerification defines the post-action health check that confirms a
+// remediation succeeded.
+type PlaybookVerification struct {
+	// healthCheck selects how post-action health is determined.
+	// +optional
+	// +kubebuilder:default=readinessProbe
+	HealthCheck HealthCheckType `json:"healthCheck,omitempty"`
+
+	// timeout is how long to wait for the health check to pass before the
+	// remediation is considered failed and eligible for rollback.
+	// +optional
+	Timeout *metav1.Duration `json:"timeout,omitempty"`
+}
+
+// PlaybookSafety defines per-playbook safety overrides. A cluster-wide
+// --dry-run flag on the manager takes precedence over DryRun=false here.
+type PlaybookSafety struct {
+	// dryRun logs and emits an event for the action this playbook would take,
+	// without executing it.
+	// +optional
+	// +kubebuilder:default=false
+	DryRun bool `json:"dryRun,omitempty"`
+
+	// requireApproval gates execution of this playbook's action behind manual
+	// approval (annotation, Slack, or webhook).
+	// +optional
+	// +kubebuilder:default=false
+	RequireApproval bool `json:"requireApproval,omitempty"`
+}
+
 // PlaybookSpec defines the desired state of Playbook
 type PlaybookSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-	// The following markers will use OpenAPI v3 schema to validate the value
-	// More info: https://book.kubebuilder.io/reference/markers/crd-validation.html
+	// trigger defines which detector activates this playbook and under what threshold.
+	// +required
+	Trigger PlaybookTrigger `json:"trigger"`
 
-	// foo is an example field of Playbook. Edit playbook_types.go to remove/update
+	// action defines the remediation action executed when the trigger fires.
+	// +required
+	Action PlaybookAction `json:"action"`
+
+	// verification defines the post-action health check that confirms the
+	// remediation succeeded.
 	// +optional
-	Foo *string `json:"foo,omitempty"`
+	Verification *PlaybookVerification `json:"verification,omitempty"`
+
+	// safety defines per-playbook safety overrides.
+	// +optional
+	Safety *PlaybookSafety `json:"safety,omitempty"`
 }
 
 // PlaybookStatus defines the observed state of Playbook.

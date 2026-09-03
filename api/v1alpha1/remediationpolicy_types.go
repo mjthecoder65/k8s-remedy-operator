@@ -23,16 +23,93 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
+// RemediationPolicyScope restricts which namespaces this policy applies to.
+type RemediationPolicyScope struct {
+	// namespaces restricts this policy to the listed namespaces. Omit or leave
+	// empty for cluster-wide.
+	// +optional
+	Namespaces []string `json:"namespaces,omitempty"`
+}
+
+// DetectorConfig enables or disables a single detector for this policy.
+type DetectorConfig struct {
+	// name is the detector being configured.
+	// +required
+	Name DetectorType `json:"name"`
+
+	// enabled turns this detector on or off within the policy's scope.
+	// +optional
+	// +kubebuilder:default=true
+	Enabled bool `json:"enabled,omitempty"`
+}
+
+// RateLimit caps the number of remediation actions allowed within a rolling
+// time window, preventing remediation storms during widespread outages.
+type RateLimit struct {
+	// maxActions is the maximum number of remediation actions permitted within Window.
+	// +required
+	// +kubebuilder:validation:Minimum=1
+	MaxActions int32 `json:"maxActions"`
+
+	// window is the rolling time window MaxActions is evaluated over.
+	// +required
+	Window metav1.Duration `json:"window"`
+}
+
+// CircuitBreakerDefaults defines the default circuit-breaker behavior for
+// playbooks bound to this policy: a playbook is auto-disabled after
+// FailureThreshold consecutive failed remediations or verification failures,
+// requiring manual re-enable.
+type CircuitBreakerDefaults struct {
+	// failureThreshold is the number of consecutive failed remediations or
+	// verification failures that trips the breaker.
+	// +optional
+	// +kubebuilder:default=3
+	// +kubebuilder:validation:Minimum=1
+	FailureThreshold int32 `json:"failureThreshold,omitempty"`
+}
+
+// RemediationPolicySafety defines global safety limits enforced across every
+// playbook bound to this policy, on top of each playbook's own safety settings.
+type RemediationPolicySafety struct {
+	// dryRun, when true, forces every playbook under this policy into dry-run
+	// mode regardless of the playbook's own setting.
+	// +optional
+	// +kubebuilder:default=true
+	DryRun bool `json:"dryRun,omitempty"`
+
+	// globalRateLimit caps total remediation actions across all playbooks
+	// bound to this policy.
+	// +optional
+	GlobalRateLimit *RateLimit `json:"globalRateLimit,omitempty"`
+
+	// blastRadiusPercent is the default per-action blast-radius cap applied
+	// when a bound playbook does not set its own maxAffectedPercent.
+	// +optional
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=100
+	BlastRadiusPercent *int32 `json:"blastRadiusPercent,omitempty"`
+
+	// circuitBreaker defines the default circuit-breaker behavior for
+	// playbooks bound to this policy.
+	// +optional
+	CircuitBreaker *CircuitBreakerDefaults `json:"circuitBreaker,omitempty"`
+}
+
 // RemediationPolicySpec defines the desired state of RemediationPolicy
 type RemediationPolicySpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-	// The following markers will use OpenAPI v3 schema to validate the value
-	// More info: https://book.kubebuilder.io/reference/markers/crd-validation.html
-
-	// foo is an example field of RemediationPolicy. Edit remediationpolicy_types.go to remove/update
+	// scope restricts which namespaces this policy applies to. Omit for cluster-wide.
 	// +optional
-	Foo *string `json:"foo,omitempty"`
+	Scope *RemediationPolicyScope `json:"scope,omitempty"`
+
+	// detectors lists which detectors are enabled within this policy's scope.
+	// +optional
+	Detectors []DetectorConfig `json:"detectors,omitempty"`
+
+	// safety defines global safety limits enforced across every playbook
+	// bound to this policy.
+	// +optional
+	Safety *RemediationPolicySafety `json:"safety,omitempty"`
 }
 
 // RemediationPolicyStatus defines the observed state of RemediationPolicy.
