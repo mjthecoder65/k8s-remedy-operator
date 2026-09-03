@@ -1,0 +1,9 @@
+apiVersion: remedy.io/v1alpha1
+kind: Playbook
+metadata:
+  labels:
+    app.kubernetes.io/name: k8s-remedy-operator
+    app.kubernetes.io/managed-by: kustomize
+  name: playbook-sample
+spec:
+  # TODO(user): Add fields here

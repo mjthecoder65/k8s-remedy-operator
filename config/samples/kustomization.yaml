@@ -1,0 +1,5 @@
+## Append samples of your project ##
+resources:
+- remedy_v1alpha1_remediationpolicy.yaml
+- remedy_v1alpha1_playbook.yaml
+# +kubebuilder:scaffold:manifestskustomizesamples

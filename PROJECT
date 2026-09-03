@@ -8,4 +8,23 @@ layout:
 - go.kubebuilder.io/v4
 projectName: k8s-remedy-operator
 repo: github.com/mjthecoder65/k8s-remedy-operator
+resources:
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: io
+  group: remedy
+  kind: RemediationPolicy
+  path: github.com/mjthecoder65/k8s-remedy-operator/api/v1alpha1
+  version: v1alpha1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: io
+  group: remedy
+  kind: Playbook
+  path: github.com/mjthecoder65/k8s-remedy-operator/api/v1alpha1
+  version: v1alpha1
 version: "3"
